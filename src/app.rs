@@ -13,6 +13,7 @@ pub struct App {
     is_opening: bool,
     current_comic: Option<Comic>,
     current_page_index: i32,
+    current_page_view: Option<PageView>,
 }
 
 #[derive(Debug, Clone)]
@@ -86,18 +87,46 @@ impl Application for App {
                         let page_count = current_comic.pages.len();
                         if self.current_page_index + 1 != (page_count as i32) {
                             self.current_page_index += 1;
+
+                            let new_page = current_comic
+                                .pages
+                                .get(self.current_page_index as usize)
+                                .unwrap()
+                                .clone();
+
+                            self.current_page_view = Some(PageView::open_page(new_page).unwrap());
                         }
                     }
                 }
                 ComicMessage::PreviousPage => {
-                    if self.current_page_index >= 1 {
-                        self.current_page_index -= 1;
+                    if let Some(current_comic) = &self.current_comic {
+                        if self.current_page_index >= 1 {
+                            self.current_page_index -= 1;
+
+                            let new_page = current_comic
+                                .pages
+                                .get(self.current_page_index as usize)
+                                .unwrap()
+                                .clone();
+
+                            self.current_page_view = Some(PageView::open_page(new_page).unwrap());
+                        }
                     }
                 }
             },
             Message::ComicOpened(result) => {
                 self.is_opening = false;
-                self.current_comic = Some(result.unwrap());
+
+                let comic = result.unwrap();
+
+                let new_page = comic
+                    .pages
+                    .get(self.current_page_index as usize)
+                    .unwrap()
+                    .clone();
+
+                self.current_page_view = Some(PageView::open_page(new_page).unwrap());
+                self.current_comic = Some(comic);
             }
         };
 
@@ -129,18 +158,8 @@ impl Application for App {
     }
 
     fn view(&mut self) -> Element<'_, Self::Message> {
-        // let content = Column::new();
-        let content = match &self.current_comic {
-            Some(comic) => {
-                let page = comic.pages.get(self.current_page_index as usize).unwrap().clone();
-                let image_viewer = iced::image::viewer::State::new();
-
-                let mut page_view = PageView { page, image_viewer };
-
-                Column::new()
-                    .width(Length::Fill)
-                    .push(page_view.view())
-            }
+        let content = match &mut self.current_page_view {
+            Some(page_view) => Column::new().width(Length::Fill).push(page_view.view()),
             None => match self.is_opening {
                 true => Column::new()
                     .width(Length::Shrink)
@@ -162,18 +181,28 @@ impl Application for App {
 
 #[derive(Debug, Clone)]
 struct PageView {
-    page: Page,
     image_viewer: iced::image::viewer::State,
+    img_data: iced::image::Handle,
 }
 
 impl PageView {
     fn view(&mut self) -> Element<Message> {
-        let img_data = self.page.as_bytes().unwrap();
-        let iced_img = iced::image::Handle::from_memory(img_data);
-
         Row::new()
             .align_items(Align::Center)
-            .push(iced::image::Viewer::new(&mut self.image_viewer, iced_img))
+            .push(iced::image::Viewer::new(
+                &mut self.image_viewer,
+                self.img_data.clone(),
+            ))
             .into()
+    }
+
+    fn open_page(page: Page) -> Result<PageView> {
+        let img_data = iced::image::Handle::from_memory(page.as_bytes().unwrap());
+        let image_viewer = iced::image::viewer::State::new();
+
+        Ok(Self {
+            image_viewer,
+            img_data,
+        })
     }
 }
