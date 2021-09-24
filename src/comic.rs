@@ -1,35 +1,65 @@
-use std::{fs::File, path::PathBuf, sync::Arc};
+use std::{cmp::Ordering, fs::File, path::PathBuf};
 
 use anyhow::Result;
-use image::DynamicImage;
+use image::io::Reader as ImageReader;
+use image::{DynamicImage, ImageError, ImageOutputFormat};
 use thiserror::Error;
 use unrar::Archive as RarArchive;
-use zip::{result::ZipError, ZipArchive};
+use zip::ZipArchive;
 
 #[derive(Error, Debug, Clone)]
 pub enum ComicError {
     #[error("invalid archive type")]
     InvalidArchiveType,
-    #[error("unable to parse rar file")]
-    RarParseError,
-    #[error("unknown comic error")]
-    Unknown,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq)]
 pub struct Page {
     file_name: String,
     path: PathBuf,
-    image: Option<DynamicImage>,
 }
 
-impl Page {}
+impl Page {
+    pub fn as_image(&self) -> Result<DynamicImage, ImageError> {
+        ImageReader::open(&self.path)?.decode()
+    }
+
+    pub fn as_bytes(&self) -> Result<Vec<u8>, ImageError> {
+        let mut buffer: Vec<u8> = Vec::new();
+
+        let _ = &self
+            .as_image()
+            .unwrap()
+            .write_to(&mut buffer, ImageOutputFormat::Png)
+            .unwrap();
+
+        Ok(buffer)
+    }
+}
+
+impl Ord for Page {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.file_name.cmp(&other.file_name)
+    }
+}
+
+impl PartialOrd for Page {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl PartialEq for Page {
+    fn eq(&self, other: &Self) -> bool {
+        self.file_name == other.file_name
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct Comic {
     pub title: String,
     pub folder_path: PathBuf,
-    pub pages: Vec<Arc<Page>>,
+    pub pages: Vec<Page>,
 }
 
 impl Comic {
@@ -58,18 +88,19 @@ impl Comic {
 
         let mut zip_archive = ZipArchive::new(reader).unwrap();
 
-        let pages: Vec<Arc<Page>> = zip_archive
+        let mut pages: Vec<Page> = zip_archive
             .file_names()
             .map(|name| {
-                let path = path.join(name);
+                let path = temp_directory.join(name);
 
-                Arc::new(Page {
+                Page {
                     file_name: name.to_string(),
-                    image: None,
                     path,
-                })
+                }
             })
-            .collect::<Vec<Arc<Page>>>();
+            .collect::<Vec<Page>>();
+
+        pages.sort();
 
         zip_archive.extract(&temp_directory).unwrap();
 
@@ -92,7 +123,7 @@ impl Comic {
 
         let temp_directory = tempfile::tempdir().unwrap().into_path();
 
-        let pages: Vec<Arc<Page>> = RarArchive::new(path_string.clone())
+        let mut pages: Vec<Page> = RarArchive::new(path_string.clone())
             .list()
             .unwrap()
             .process()
@@ -102,13 +133,14 @@ impl Comic {
                 let filename = entry.filename;
                 let path = temp_directory.join(&filename);
 
-                Arc::new(Page {
+                Page {
                     file_name: filename,
-                    image: None,
                     path,
-                })
+                }
             })
-            .collect::<Vec<Arc<Page>>>();
+            .collect::<Vec<Page>>();
+
+        pages.sort();
 
         RarArchive::new(path_string.clone())
             .extract_to(temp_directory.to_str().unwrap_or_default().to_string())

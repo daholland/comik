@@ -1,10 +1,9 @@
 #![windows_subsystem = "windows"]
 
-mod ui;
 mod comic;
+mod app;
 
 use iced::{Application, Settings};
-use ui::app;
 
 fn main() -> iced::Result {
     app::App::run(Settings::default())
