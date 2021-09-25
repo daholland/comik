@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 
-use iced::{Align, Application, Column, Command, Container, Element, Length, Row, Text};
+use iced::{Align, Application, Column, Command, Container, Element, Length, Row, Text, keyboard::KeyCode};
 use iced_native::Widget;
 
 use crate::comic::{Comic, ComicError, Page};
@@ -33,18 +33,10 @@ pub enum ComicMessage {
 }
 
 #[derive(Debug, Clone)]
-pub enum KeyboardMessage {
-    KeyPressed(iced::keyboard::KeyCode, iced::keyboard::Modifiers),
-    KeyReleased(iced::keyboard::KeyCode, iced::keyboard::Modifiers),
-    //modifiers too its ?
-}
-
-#[derive(Debug, Clone)]
 pub enum Message {
     WindowMessage(WindowMessage),
     ComicMessage(ComicMessage),
     ComicOpened(Result<Comic, ComicError>),
-    KeyboardMessage(KeyboardMessage),
 }
 
 impl Application for App {
@@ -103,6 +95,8 @@ impl Application for App {
                                 .unwrap()
                                 .clone();
 
+                            println!("{}", self.current_page_index);
+
                             self.current_page_view = Some(PageView::open_page(new_page).unwrap());
                         }
                     }
@@ -117,6 +111,8 @@ impl Application for App {
                                 .get(self.current_page_index as usize)
                                 .unwrap()
                                 .clone();
+
+                            println!("{}", self.current_page_index);
 
                             self.current_page_view = Some(PageView::open_page(new_page).unwrap());
                         }
@@ -136,19 +132,7 @@ impl Application for App {
 
                 self.current_page_view = Some(PageView::open_page(new_page).unwrap());
                 self.current_comic = Some(comic);
-            },
-                Message::KeyboardMessage(key) =>  {
-                    println!("{:?} pressed", key);
-                    match key {
-                        KeyboardMessage::KeyPressed(pressed, modifiers) => { 
-                            //send prev page
-                            
-                        }
-                        _ => {}
-                        
-                    }
-
-                }
+            }
             
         }
 
@@ -156,6 +140,8 @@ impl Application for App {
     }
 
     fn subscription(&self) -> iced::Subscription<Self::Message> {
+        use iced_native::keyboard as kb;
+
         iced_native::subscription::events_with(|event, _status| match event {
             iced_native::Event::Window(window_event) => match window_event {
                 iced_native::window::Event::Focused => {
@@ -177,7 +163,14 @@ impl Application for App {
             }
             iced_native::Event::Keyboard(key_event) => match key_event {
                 iced_native::keyboard::Event::KeyPressed {key_code: key, modifiers: mods}  => {
-                       Some(Message::KeyboardMessage(KeyboardMessage::KeyPressed(key, mods)))
+                //read config/keymapping?                    
+                    match key {
+                       kb::KeyCode::Left => {
+                           println!("Keeb Left => CommicMessage::PreviousPage");
+                           Some(Message::ComicMessage(ComicMessage::PreviousPage))
+                        },
+                       _ => None,
+                    }
                 }
                 _ => None,
             }
