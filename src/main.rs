@@ -2,6 +2,7 @@
 
 mod comic;
 mod app;
+mod widgets;
 
 use iced::{Application, Settings};
 

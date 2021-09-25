@@ -1,11 +1,14 @@
+use std::ops::Sub;
 use std::path::PathBuf;
 
 use anyhow::Result;
 
-use iced::{Align, Application, Column, Command, Container, Element, Length, Row, Text};
-use iced_native::Widget;
+use iced::{Align, Application, Column, Command, Container, Element, Length, Row, Svg, Text};
+
 
 use crate::comic::{Comic, ComicError, Page};
+
+use super::widgets as comik_widgets;
 
 #[derive(Debug, Default)]
 pub struct App {
@@ -194,13 +197,23 @@ struct PageView {
 
 impl PageView {
     fn view(&mut self) -> Element<Message> {
+        let testwidget = comik_widgets::ThumbnailPicker {
+            image: Svg::from_path(format!("{}/image.svg", env!("CARGO_MANIFEST_DIR"))),
+            picked_thumbnail_index: 0,
+            size: (20,20)
+        };
+
+        println!("{:?}", testwidget.image);
         Row::new()
             .height(Length::Fill)
             .width(Length::Fill)
             .push(
                 iced::image::Viewer::new(&mut self.image_viewer, self.img_data.clone())
                     .width(Length::Fill)
-                    .height(Length::Fill),
+                    .height(Length::Fill)
+            ).push(
+
+                testwidget //Svg::from_path(format!("{}/image.svg", env!("CARGO_MANIFEST_DIR"))),   
             )
             .into()
     }
