@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 
-use iced::{Align, Application, Column, Command, Container, Element, Length, Row, Text, keyboard::KeyCode};
+use iced::{Align, Application, Column, Command, Container, Element, Length, Row, Text};
 use iced_native::Widget;
 
 use crate::comic::{Comic, ComicError, Page};
