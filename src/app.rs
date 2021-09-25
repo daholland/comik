@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use anyhow::Result;
 
 use iced::{Align, Application, Column, Command, Container, Element, Length, Row, Text};
+use iced_native::Widget;
 
 use crate::comic::{Comic, ComicError, Page};
 
@@ -159,7 +160,13 @@ impl Application for App {
 
     fn view(&mut self) -> Element<'_, Self::Message> {
         let content = match &mut self.current_page_view {
-            Some(page_view) => Column::new().width(Length::Fill).push(page_view.view()),
+            Some(page_view) => {
+                Column::new()
+                    .width(Length::Fill)
+                    .height(Length::Fill)
+                    .align_items(Align::Center)
+                    .push(page_view.view())
+            },
             None => match self.is_opening {
                 true => Column::new()
                     .width(Length::Shrink)
@@ -188,11 +195,13 @@ struct PageView {
 impl PageView {
     fn view(&mut self) -> Element<Message> {
         Row::new()
-            .align_items(Align::Center)
-            .push(iced::image::Viewer::new(
-                &mut self.image_viewer,
-                self.img_data.clone(),
-            ))
+            .height(Length::Fill)
+            .width(Length::Fill)
+            .push(
+                iced::image::Viewer::new(&mut self.image_viewer, self.img_data.clone())
+                    .width(Length::Fill)
+                    .height(Length::Fill),
+            )
             .into()
     }
 
