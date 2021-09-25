@@ -33,10 +33,18 @@ pub enum ComicMessage {
 }
 
 #[derive(Debug, Clone)]
+pub enum KeyboardMessage {
+    KeyPressed(iced::keyboard::KeyCode, iced::keyboard::Modifiers),
+    KeyReleased(iced::keyboard::KeyCode, iced::keyboard::Modifiers),
+    //modifiers too its ?
+}
+
+#[derive(Debug, Clone)]
 pub enum Message {
     WindowMessage(WindowMessage),
     ComicMessage(ComicMessage),
     ComicOpened(Result<Comic, ComicError>),
+    KeyboardMessage(KeyboardMessage),
 }
 
 impl Application for App {
@@ -128,8 +136,21 @@ impl Application for App {
 
                 self.current_page_view = Some(PageView::open_page(new_page).unwrap());
                 self.current_comic = Some(comic);
-            }
-        };
+            },
+                Message::KeyboardMessage(key) =>  {
+                    println!("{:?} pressed", key);
+                    match key {
+                        KeyboardMessage::KeyPressed(pressed, modifiers) => { 
+                            //send prev page
+                            
+                        }
+                        _ => {}
+                        
+                    }
+
+                }
+            
+        }
 
         Command::none()
     }
@@ -153,8 +174,15 @@ impl Application for App {
                     Some(Message::WindowMessage(WindowMessage::FileHoveredLeft))
                 }
                 _ => None,
-            },
-            _ => None,
+            }
+            iced_native::Event::Keyboard(key_event) => match key_event {
+                iced_native::keyboard::Event::KeyPressed {key_code: key, modifiers: mods}  => {
+                       Some(Message::KeyboardMessage(KeyboardMessage::KeyPressed(key, mods)))
+                }
+                _ => None,
+            }
+             _ => None,
+            
         })
     }
 
