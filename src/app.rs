@@ -2,10 +2,9 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 
-use iced::{Align, Application, Column, Command, Container, Element, Length, Row, Text};
-use iced_native::Widget;
+use iced::{Application, Column, Command, Container, Element, Length, Row, Text};
 
-use crate::comic::{Comic, ComicError, Page};
+use crate::{comic::{Comic, ComicError, Page}, image_viewer};
 
 #[derive(Debug, Default)]
 pub struct App {
@@ -160,18 +159,15 @@ impl Application for App {
 
     fn view(&mut self) -> Element<'_, Self::Message> {
         let content = match &mut self.current_page_view {
-            Some(page_view) => {
-                Column::new()
-                    .width(Length::Fill)
-                    .height(Length::Fill)
-                    .align_items(Align::Center)
-                    .push(page_view.view())
-            },
+            Some(page_view) => Row::new()
+                .width(Length::Fill)
+                .height(Length::Fill)
+                .push(page_view.view()),
             None => match self.is_opening {
-                true => Column::new()
+                true => Row::new()
                     .width(Length::Shrink)
                     .push(Text::new("Loading Comic File")),
-                false => Column::new()
+                false => Row::new()
                     .width(Length::Shrink)
                     .push(Text::new("No Comic Loaded")),
             },
@@ -188,7 +184,7 @@ impl Application for App {
 
 #[derive(Debug, Clone)]
 struct PageView {
-    image_viewer: iced::image::viewer::State,
+    image_viewer: image_viewer::ImageViewerState,
     img_data: iced::image::Handle,
 }
 
@@ -198,7 +194,7 @@ impl PageView {
             .height(Length::Fill)
             .width(Length::Fill)
             .push(
-                iced::image::Viewer::new(&mut self.image_viewer, self.img_data.clone())
+                image_viewer::ImageViewer::new(&mut self.image_viewer, self.img_data.clone())
                     .width(Length::Fill)
                     .height(Length::Fill),
             )
@@ -207,7 +203,7 @@ impl PageView {
 
     fn open_page(page: Page) -> Result<PageView> {
         let img_data = iced::image::Handle::from_memory(page.as_bytes().unwrap());
-        let image_viewer = iced::image::viewer::State::new();
+        let image_viewer = image_viewer::ImageViewerState::new();
 
         Ok(Self {
             image_viewer,

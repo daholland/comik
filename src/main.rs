@@ -2,6 +2,7 @@
 
 mod comic;
 mod app;
+mod image_viewer;
 
 use iced::{Application, Settings};
 
