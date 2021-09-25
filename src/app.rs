@@ -169,6 +169,10 @@ impl Application for App {
                            println!("Keeb Left => CommicMessage::PreviousPage");
                            Some(Message::ComicMessage(ComicMessage::PreviousPage))
                         },
+                        kb::KeyCode::Right => {
+                            println!("Keeb Right => CommicMessage::NextPage");
+                            Some(Message::ComicMessage(ComicMessage::NextPage))
+                         },
                        _ => None,
                     }
                 }
