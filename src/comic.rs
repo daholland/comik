@@ -55,6 +55,30 @@ impl PartialEq for Page {
     }
 }
 
+#[derive(Debug, Default)]
+pub struct ComicCollection {
+    pub title: Option<String>,
+    pub source: Option<String>,
+    pub paths: Vec<PathBuf>,
+}
+
+impl ComicCollection {
+    pub fn new(paths: Vec<PathBuf>) -> Result<ComicCollection> {
+        let filtered_paths = paths.iter().cloned().filter(|path| {
+            if let Some(ext) = path.extension() {
+                ext == "zip" || ext == "cbz" || ext == "rar" || ext == "cbr"
+            } else {
+                false
+            }
+        }).collect::<Vec<PathBuf>>();
+
+        Ok(ComicCollection {
+            paths: filtered_paths,
+            ..Default::default()
+        })
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct Comic {
     pub title: String,

@@ -1,11 +1,12 @@
 #![windows_subsystem = "windows"]
 
+use anyhow::Result;
+
 mod comic;
 mod app;
-mod image_viewer;
+mod window;
+mod ui;
 
-use iced::{Application, Settings};
-
-fn main() -> iced::Result {
-    app::App::run(Settings::default())
+fn main() -> Result<()>{
+    app::App::run("comik".to_string())
 }
