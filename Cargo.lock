@@ -251,6 +251,7 @@ name = "comik"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "eframe",
  "egui_glium",
  "epi",
  "glium",
@@ -521,10 +522,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9ea835d29036a4087793836fa931b08837ad5e957da9e23886b29586fb9b6650"
 
 [[package]]
+name = "eframe"
+version = "0.14.0"
+source = "git+https://github.com/emilk/egui?branch=master#ba0e3780a1f78f92f3923de2db541a69e7207d4f"
+dependencies = [
+ "egui",
+ "egui_glium",
+ "egui_web",
+ "epi",
+]
+
+[[package]]
 name = "egui"
 version = "0.14.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b403f29d592b5c2267279bfdf2cd3fe3ba0e7a8738d03203a6f1536e8e9d26bd"
+source = "git+https://github.com/emilk/egui?branch=master#ba0e3780a1f78f92f3923de2db541a69e7207d4f"
 dependencies = [
  "epaint",
 ]
@@ -532,14 +543,26 @@ dependencies = [
 [[package]]
 name = "egui_glium"
 version = "0.14.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "972b1882ae98f7dd2f5dcbf5efeb35448c158a8f6ba80d6cc3b8073eae1fae4f"
+source = "git+https://github.com/emilk/egui?branch=master#ba0e3780a1f78f92f3923de2db541a69e7207d4f"
 dependencies = [
  "copypasta",
  "egui",
  "epi",
  "glium",
  "webbrowser",
+]
+
+[[package]]
+name = "egui_web"
+version = "0.14.1"
+source = "git+https://github.com/emilk/egui?branch=master#ba0e3780a1f78f92f3923de2db541a69e7207d4f"
+dependencies = [
+ "egui",
+ "epi",
+ "js-sys",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
 ]
 
 [[package]]
@@ -551,8 +574,7 @@ checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
 [[package]]
 name = "emath"
 version = "0.14.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cca5179aa9d15128cebb79bb56dda73a79cc66b402056ff19a992e54b365e15c"
+source = "git+https://github.com/emilk/egui?branch=master#ba0e3780a1f78f92f3923de2db541a69e7207d4f"
 
 [[package]]
 name = "enum_primitive"
@@ -566,21 +588,19 @@ dependencies = [
 [[package]]
 name = "epaint"
 version = "0.14.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "136e7d88da926182bcfdb8217137dd347dfe5dc03b8988eaba3ef8becf83394a"
+source = "git+https://github.com/emilk/egui?branch=master#ba0e3780a1f78f92f3923de2db541a69e7207d4f"
 dependencies = [
  "ab_glyph",
  "ahash",
  "atomic_refcell",
  "emath",
- "ordered-float",
+ "nohash-hasher",
 ]
 
 [[package]]
 name = "epi"
 version = "0.14.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e3c033c9b4d921566a98b8831b63af5ba2a0ad7ffa62d22b897698f36c22a28a"
+source = "git+https://github.com/emilk/egui?branch=master#ba0e3780a1f78f92f3923de2db541a69e7207d4f"
 dependencies = [
  "egui",
 ]
@@ -1051,6 +1071,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "nohash-hasher"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2bf50223579dc7cdcfb3bfcacf7069ff68243f8c363f62ffa99cf000a6b9c451"
+
+[[package]]
 name = "nom"
 version = "7.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1243,15 +1269,6 @@ name = "once_cell"
 version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "692fcb63b64b1758029e0a96ee63e049ce8c5948587f2f7208df04625e5f6b56"
-
-[[package]]
-name = "ordered-float"
-version = "2.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "97c9d06878b3a851e8026ef94bf7fef9ba93062cd412601da4d9cf369b1cc62d"
-dependencies = [
- "num-traits 0.2.14",
-]
 
 [[package]]
 name = "osmesa-sys"
@@ -1811,6 +1828,18 @@ dependencies = [
  "quote",
  "syn",
  "wasm-bindgen-shared",
+]
+
+[[package]]
+name = "wasm-bindgen-futures"
+version = "0.4.28"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8e8d7523cb1f2a4c96c1317ca690031b714a51cc14e05f712446691f413f5d39"
+dependencies = [
+ "cfg-if 1.0.0",
+ "js-sys",
+ "wasm-bindgen",
+ "web-sys",
 ]
 
 [[package]]

@@ -1,8 +1,11 @@
 use std::{cmp::Ordering, fs::File, path::PathBuf};
 
 use anyhow::Result;
+use egui_glium::EguiGlium;
+use epi::egui::Color32;
+use glium::texture::RawImage2d;
 use image::io::Reader as ImageReader;
-use image::{DynamicImage, ImageError, ImageOutputFormat};
+use image::{DynamicImage, GenericImageView, ImageError, ImageOutputFormat, Pixel};
 use thiserror::Error;
 use unrar::Archive as RarArchive;
 use zip::ZipArchive;
@@ -87,9 +90,7 @@ pub struct Comic {
 }
 
 impl Comic {
-    pub async fn from_archive_path(path: PathBuf) -> Result<Self, ComicError> {
-        println!("got archive {:?}", path);
-
+    pub fn from_archive_path(path: PathBuf) -> Result<Self, ComicError> {
         return match path.extension() {
             Some(ext) if ext == "zip" || ext == "cbz" => Comic::from_zip(path),
             Some(ext) if ext == "rar" || ext == "cbr" => Comic::from_rar(path),
