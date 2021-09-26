@@ -1,6 +1,7 @@
 // based off of https://github.com/iced-rs/iced/blob/master/native/src/widget/image/viewer.rs
 use std::hash::Hash;
 use iced_native::{Element, Event, Hasher, Layout, Length, Point, Rectangle, Size, Vector, Widget, clipboard::Clipboard, event, layout, mouse};
+use iced_graphics::widget::image::viewer;
 
 #[derive(Debug, Clone, Copy)]
 pub struct ImageViewerState {
@@ -342,14 +343,4 @@ pub trait Renderer: iced_native::Renderer + Sized {
         handle: iced::image::Handle,
         is_mouse_over: bool,
     ) -> Self::Output;
-}
-
-impl<'a, Message, Renderer> From<ImageViewer<'a>> for Element<'a, Message, Renderer>
-where
-    Renderer: 'a + self::Renderer + iced_native::image::Renderer,
-    Message: 'a,
-{
-    fn from(viewer: ImageViewer<'a>) -> Element<'a, Message, Renderer> {
-        Element::new(viewer)
-    }
 }
