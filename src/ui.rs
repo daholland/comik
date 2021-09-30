@@ -56,6 +56,7 @@ impl Ui {
             if let Some((texture, size)) = self.render_current_page(frame) {
                 ui.image(texture, size);
             }
+            ui.add(&mut widgets::ThumbnailItem::default());
         });
     }
 
@@ -86,4 +87,112 @@ impl Ui {
 
         None
     }
+}
+
+mod widgets {
+    use eframe::egui::{Image, Response, Sense, TextureId, Ui, Vec2, Widget};
+    
+
+   
+    #[derive(Debug)]
+    pub struct ThumbnailItem {
+        image: Option<Image>,
+        index_number: u16,
+        clicked: fn() //fireoff click event
+    }
+
+    impl ThumbnailItem {
+        pub fn new() -> Self {
+            Self {
+                image: None,
+                index_number: 0,
+                clicked: ||{}
+            }
+        }
+
+        // pub fn paint_at(&self, ui: &mut Ui, rect: Rect) {
+        //     use epaint::*;
+        //     let Self {
+        //         texture_id,
+        //         uv,
+        //         size: _,
+        //         bg_fill,
+        //         tint,
+        //         sense: _,
+        //     } = self;
+    
+        //     if *bg_fill != Default::default() {
+        //         let mut mesh = Mesh::default();
+        //         mesh.add_colored_rect(rect, *bg_fill);
+        //         ui.painter().add(Shape::mesh(mesh));
+        //     }
+    
+        //     {
+        //         // TODO: builder pattern for Mesh
+        //         let mut mesh = Mesh::with_texture(*texture_id);
+        //         mesh.add_rect_with_uv(rect, *uv, *tint);
+        //         ui.painter().add(Shape::mesh(mesh));
+        //     }
+        // }
+    }
+
+    impl Default for ThumbnailItem {
+        fn default() -> Self {
+            Self {
+                image: None,
+                index_number: 0,
+                clicked: ||{}
+            }
+        }
+    }
+
+    impl Widget for &mut ThumbnailItem {
+        fn ui(self, ui: &mut Ui) -> Response {
+            use crate::ui::egui;
+            let mut ctx = egui::CtxRef::default();
+            let image_size = Vec2::new(25., 25.);
+            ui.add(Image::new(TextureId::Egui, image_size));
+            ui.label(self.index_number.to_string());
+
+            let total_size = image_size + Vec2::new(15.,15.);
+
+            let (rect, response) = ui.allocate_exact_size(total_size, Sense::click());
+            //self.paint_at(ui, rect);
+
+            response
+
+        }
+    }
+}
+
+mod math_helpers {
+    use std::f64::consts::PI as MathPI;
+    struct Tween {
+        //function
+        funconce: fn(f64,f64) -> f64,
+        start: f32, 
+        end: f32
+    }
+
+    fn easeInSine(x: f64) -> f64 {
+        1. - (x * MathPI).cos()
+    }
+
+    fn easeOutSine(x: f64) -> f64 {
+        unimplemented!()//1. - (x * MathPI).cos()
+    }
+
+    impl Tween {
+        fn new() -> Self {
+            Self {
+                funconce: |input, step| {input},
+                start: 0f32,
+                end: 0f32
+            }
+        }
+
+    
+    }
+
+    
 }
