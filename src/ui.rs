@@ -119,11 +119,11 @@ mod widgets {
             let thumbnail_size = Vec2::new(100., 100.);
             let vec = vec![
 
-                ThumbnailItem::new(0, thumbnail_size),
-                ThumbnailItem::new(1, thumbnail_size),
-                ThumbnailItem::new(2, thumbnail_size),
-                ThumbnailItem::new(3, thumbnail_size),
-                ThumbnailItem::new(4, thumbnail_size),
+                ThumbnailItem::new(0, thumbnail_size, false),
+                ThumbnailItem::new(1, thumbnail_size, false),
+                ThumbnailItem::new(2, thumbnail_size, true),
+                ThumbnailItem::new(3, thumbnail_size, false),
+                ThumbnailItem::new(4, thumbnail_size, true),
 
 
 
@@ -145,7 +145,7 @@ mod widgets {
                 
                     let thumbnail_size = Vec2::new(100., 100.);
                      for item in self.thumbnail_list.as_slice() {//for i in thumbs.len
-                        let thumbitem = ui.add(&mut ThumbnailItem::new(item.index_number, thumbnail_size));
+                        let thumbitem = ui.add(&mut ThumbnailItem::new(item.index_number, thumbnail_size, item.selected));
                         let thumbitem = thumbitem.interact(Sense::click());
                         if thumbitem.clicked() {
                             println!("Item index: {} clicked!", item.index_number);
@@ -186,12 +186,12 @@ mod widgets {
     }
 
     impl ThumbnailItem {
-        pub fn new(current_page: i32, image_size: Vec2) -> Self {
+        pub fn new(current_page: i32, image_size: Vec2, selected: bool) -> Self {
             Self {
                 image: None,
                 index_number: current_page,
                 clicked: |i|{println!("ThumbItem {} clicked", i)},
-                selected: false,
+                selected: selected,
                 image_size: image_size
             }
         }
@@ -223,13 +223,16 @@ mod widgets {
             //let response = ui.allocate_ui(total_size, |ui| {
                 let image = ui.add(Image::new(TextureId::Egui, image_size));
                 let _label = ui.label(self.index_number.to_string());
-                
+                if self.selected {
+                    ui.painter().rect_stroke(image.rect, 0.0, (1.0, egui::Color32::GREEN));
+                 }
                 let image = image.interact(Sense::click());
                 let _label = _label.interact(Sense::click());
                 
                 if image.clicked() || _label.clicked() {
                     //image.rect = image.rect.translate(Vec2::new(10., 10.));
-                    println!("Image {} Clicked!", self.index_number);
+                    println!("Image {} Clicked! Selected: {}", self.index_number, self.selected);
+
                 }
                 
                 
@@ -242,7 +245,7 @@ mod widgets {
 
             if response.clicked() {
                 self.clicked(self.index_number);
-                ui.painter().rect_stroke(response.rect, 0.0, (1.0, egui::Color32::WHITE));
+                
 
             }    
             
