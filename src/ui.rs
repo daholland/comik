@@ -8,20 +8,21 @@ use epi::egui::CtxRef;
 use epi::egui::TextureId;
 use image::Pixel;
 
-use crate::comic::{Comic, ComicCollection};
+use crate::providers::file_system::FileSystemCollectionProvider;
+use crate::providers::CollectionProvider;
 
-#[derive(Default, Debug)]
+#[derive(Debug, Default)]
 pub struct Ui {
-    collection: Option<ComicCollection>,
-    current_comic: Option<Comic>,
-    current_page_index: i32,
+    collection: Option<FileSystemCollectionProvider>,
+    current_comic_index: usize,
+    current_page_index: usize,
 }
 
 impl Ui {
-    pub fn new() -> Result<Self> {
-        Ok(Self {
+    pub fn new() -> Self {
+        Self {
             ..Default::default()
-        })
+        }
     }
 
     pub fn tick(&mut self, ctx: &CtxRef, frame: &mut epi::Frame<'_>) {
@@ -44,19 +45,12 @@ impl Ui {
 
             dbg!(&dropped_files);
 
-            let collection = ComicCollection::new(dropped_files).unwrap();
-
-            if collection.paths.len() > 0 {
-                let comic_path = collection.paths.get(0).unwrap().clone();
-                let comic = Comic::from_archive_path(comic_path).unwrap();
-
-                self.current_comic = Some(comic);
-            }
+            let collection =
+                FileSystemCollectionProvider::new("collection name".to_string(), dropped_files)
+                    .unwrap();
 
             self.collection = Some(collection);
         }
-
-
         
         egui::SidePanel::left("thumbnail_panel")
             .min_width(200.)
@@ -67,39 +61,40 @@ impl Ui {
                 
         });
 
-        egui::CentralPanel::default()
-            .show(ctx, |ui: &mut egui::Ui| {
-                if let Some((texture, size)) = self.render_current_page(frame) {
-                    ui.image(texture, size);
-                }
-                ui.colored_label(Color32::WHITE, "Center Panel");
-                ui.image(TextureId::Egui, egui::Vec2::new(200., 200.));
+        egui::CentralPanel::default().show(ctx, |ui: &mut egui::Ui| {
+            if let Some((texture, size)) = self.render_current_page(frame) {
+                dbg!(&texture);
+                ui.image(texture, size);
+            }
+
         });
     }
 
     fn render_current_page(&self, frame: &mut epi::Frame<'_>) -> Option<(TextureId, egui::Vec2)> {
-        if let Some(comic) = &self.current_comic {
-            let page = comic.pages.get(self.current_page_index as usize).unwrap();
-            let image = page.as_image().unwrap().to_rgb8();
-            let size = (image.width() as usize, image.height() as usize);
+        if let Some(collection) = &self.collection {
+            if let Some(comic) = collection.get_comic(self.current_comic_index) {
+                let page = comic.get_page(self.current_page_index).unwrap();
+                let image = page.get_image().unwrap().to_rgb8();
+                let size = (image.width() as usize, image.height() as usize);
 
-            // TODO! apply zoom and panning
-            let pixels = image
-                .pixels()
-                .into_iter()
-                .map(|pixel| {
-                    let [r, g, b, a] = pixel.to_rgba().0;
-                    Color32::from_rgba_unmultiplied(r, g, b, a)
-                })
-                .collect::<Vec<Color32>>();
+                // TODO! apply zoom and panning
+                let pixels = image
+                    .pixels()
+                    .into_iter()
+                    .map(|pixel| {
+                        let [r, g, b, a] = pixel.to_rgba().0;
+                        Color32::from_rgba_unmultiplied(r, g, b, a)
+                    })
+                    .collect::<Vec<Color32>>();
 
-            let texture = frame
-                .tex_allocator()
-                .alloc_srgba_premultiplied(size, &pixels);
+                let texture = frame
+                    .tex_allocator()
+                    .alloc_srgba_premultiplied(size, &pixels);
 
-            let size = egui::Vec2::new(size.0 as f32, size.1 as f32);
+                let size = egui::Vec2::new(size.0 as f32, size.1 as f32);
 
-            return Some((texture, size));
+                return Some((texture, size));
+            }
         }
 
         None
