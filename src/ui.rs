@@ -140,7 +140,7 @@ mod widgets {
             use crate::ui::egui;
             let mut ctx = egui::CtxRef::default();
             let mut scrollarea = egui::ScrollArea::new([true,true])
-                .show(ui, |ui| {
+                .id_source("thumbnaillist_scroll").show(ui, |ui| {
                     ui.colored_label(Color32::WHITE, "-- THUMBNAILLIST --");
                 
                     let thumbnail_size = Vec2::new(100., 100.);
@@ -219,24 +219,31 @@ mod widgets {
             let mut ctx = egui::CtxRef::default();
             
             let image_size = self.image_size;
-            let image = ui.add(Image::new(TextureId::Egui, image_size));
-            let mut image = image.interact(Sense::click());
-            if image.clicked() {
-                image.rect = image.rect.translate(Vec2::new(10., 10.));
-                println!("Image clicked!");
-            }
-            
-            ui.label(self.index_number.to_string());
-
             let total_size = image_size + Vec2::new(15.,15.);
-
-            let (rect, response) = ui.allocate_exact_size(total_size, Sense::click());
+            //let response = ui.allocate_ui(total_size, |ui| {
+                let image = ui.add(Image::new(TextureId::Egui, image_size));
+                let _label = ui.label(self.index_number.to_string());
+                
+                let image = image.interact(Sense::click());
+                let _label = _label.interact(Sense::click());
+                
+                if image.clicked() || _label.clicked() {
+                    //image.rect = image.rect.translate(Vec2::new(10., 10.));
+                    println!("Image {} Clicked!", self.index_number);
+                }
+                
+                
+                
+                let response = image.interact(Sense::click());
+                
+                //});
             //self.paint_at(ui, rect);
 
-            //let response = response.interact(Sense::click());
 
             if response.clicked() {
                 self.clicked(self.index_number);
+                ui.painter().rect_stroke(response.rect, 0.0, (1.0, egui::Color32::WHITE));
+
             }    
             
             response
