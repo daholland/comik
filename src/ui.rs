@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use anyhow::Result;
+use eframe::egui::SidePanel;
 use epi::egui;
 use epi::egui::Color32;
 use epi::egui::CtxRef;
@@ -24,6 +25,9 @@ impl Ui {
     }
 
     pub fn tick(&mut self, ctx: &CtxRef, frame: &mut epi::Frame<'_>) {
+        if ctx.input().key_pressed(egui::Key::Q) {
+            
+        }
         dbg!(&ctx.input().raw.dropped_files);
 
         if !ctx.input().raw.dropped_files.is_empty() {
@@ -52,11 +56,24 @@ impl Ui {
             self.collection = Some(collection);
         }
 
-        egui::CentralPanel::default().show(ctx, |ui: &mut egui::Ui| {
-            if let Some((texture, size)) = self.render_current_page(frame) {
-                ui.image(texture, size);
-            }
-            ui.add(&mut widgets::ThumbnailItem::default());
+
+        
+        egui::SidePanel::left("thumbnail_panel")
+            .min_width(200.)
+            .max_width(500.)
+            .show(ctx, |ui| {
+                
+                let item = ui.add(&mut widgets::ThumbnailItem::default());
+                
+        });
+
+        egui::CentralPanel::default()
+            .show(ctx, |ui: &mut egui::Ui| {
+                if let Some((texture, size)) = self.render_current_page(frame) {
+                    ui.image(texture, size);
+                }
+                ui.colored_label(Color32::WHITE, "Center Panel");
+                ui.image(TextureId::Egui, egui::Vec2::new(200., 200.));
         });
     }
 
@@ -98,7 +115,8 @@ mod widgets {
     pub struct ThumbnailItem {
         image: Option<Image>,
         index_number: u16,
-        clicked: fn() //fireoff click event
+        clicked: fn(), //fireoff click event
+        selected: bool
     }
 
     impl ThumbnailItem {
@@ -106,7 +124,8 @@ mod widgets {
             Self {
                 image: None,
                 index_number: 0,
-                clicked: ||{}
+                clicked: ||{},
+                selected: false
             }
         }
 
@@ -141,7 +160,8 @@ mod widgets {
             Self {
                 image: None,
                 index_number: 0,
-                clicked: ||{}
+                clicked: ||{},
+                selected: false
             }
         }
     }
@@ -150,8 +170,15 @@ mod widgets {
         fn ui(self, ui: &mut Ui) -> Response {
             use crate::ui::egui;
             let mut ctx = egui::CtxRef::default();
+            
             let image_size = Vec2::new(25., 25.);
-            ui.add(Image::new(TextureId::Egui, image_size));
+            let image = ui.add(Image::new(TextureId::Egui, image_size));
+            let mut image = image.interact(Sense::click());
+            if image.clicked() {
+                image.rect = image.rect.translate(Vec2::new(10., 10.));
+                println!("Image clicked!");
+            }
+            
             ui.label(self.index_number.to_string());
 
             let total_size = image_size + Vec2::new(15.,15.);
@@ -159,8 +186,9 @@ mod widgets {
             let (rect, response) = ui.allocate_exact_size(total_size, Sense::click());
             //self.paint_at(ui, rect);
 
-            response
+            let response = response.interact(Sense::click());
 
+            response
         }
     }
 }
