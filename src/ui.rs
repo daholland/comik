@@ -28,7 +28,7 @@ impl Ui {
         if ctx.input().key_pressed(egui::Key::Q) {
             
         }
-        dbg!(&ctx.input().raw.dropped_files);
+        //dbg!(&ctx.input().raw.dropped_files);
 
         if !ctx.input().raw.dropped_files.is_empty() {
             println!("files dropped");
@@ -114,45 +114,24 @@ mod widgets {
     #[derive(Debug)]
     pub struct ThumbnailItem {
         image: Option<Image>,
-        index_number: u16,
-        clicked: fn(), //fireoff click event
+        index_number: i32,
+        clicked: fn(i32), //fireoff click event
         selected: bool
     }
 
     impl ThumbnailItem {
-        pub fn new() -> Self {
+        pub fn new(current_page: i32) -> Self {
             Self {
                 image: None,
                 index_number: 0,
-                clicked: ||{},
+                clicked: |i|{println!("ThumbItem {} clicked", i)},
                 selected: false
             }
         }
 
-        // pub fn paint_at(&self, ui: &mut Ui, rect: Rect) {
-        //     use epaint::*;
-        //     let Self {
-        //         texture_id,
-        //         uv,
-        //         size: _,
-        //         bg_fill,
-        //         tint,
-        //         sense: _,
-        //     } = self;
-    
-        //     if *bg_fill != Default::default() {
-        //         let mut mesh = Mesh::default();
-        //         mesh.add_colored_rect(rect, *bg_fill);
-        //         ui.painter().add(Shape::mesh(mesh));
-        //     }
-    
-        //     {
-        //         // TODO: builder pattern for Mesh
-        //         let mut mesh = Mesh::with_texture(*texture_id);
-        //         mesh.add_rect_with_uv(rect, *uv, *tint);
-        //         ui.painter().add(Shape::mesh(mesh));
-        //     }
-        // }
+        pub fn clicked(&mut self,index: i32) {
+            println!("ThumbItem index: {}| Clicked", index);
+        }
     }
 
     impl Default for ThumbnailItem {
@@ -160,7 +139,7 @@ mod widgets {
             Self {
                 image: None,
                 index_number: 0,
-                clicked: ||{},
+                clicked: |i|{ println!("ThumbItem {} clicked", i)},
                 selected: false
             }
         }
@@ -188,9 +167,14 @@ mod widgets {
 
             let response = response.interact(Sense::click());
 
+            if response.clicked() {
+                self.clicked(self.index_number);
+            }    
+            
             response
+            }
         }
-    }
+    
 }
 
 mod math_helpers {
