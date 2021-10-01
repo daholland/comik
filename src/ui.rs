@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use eframe::egui::SidePanel;
+use eframe::egui::Vec2;
 use epi::egui;
 use epi::egui::Color32;
 use epi::egui::CtxRef;
@@ -55,9 +56,10 @@ impl Ui {
         egui::SidePanel::left("thumbnail_panel")
             .min_width(200.)
             .max_width(500.)
+            .resizable(true)
             .show(ctx, |ui| {
                 
-                let item = ui.add(&mut widgets::ThumbnailItem::default());
+                let item = ui.add(&mut widgets::ThumbnailList::new());
                 
         });
 
@@ -102,25 +104,95 @@ impl Ui {
 }
 
 mod widgets {
-    use eframe::egui::{Image, Response, Sense, TextureId, Ui, Vec2, Widget};
-    
+    use eframe::egui::{Color32, Image, Response, Sense, TextureId, Ui, Vec2, Widget};
 
-   
+    
+    
+#[derive(Default)]
+    pub struct ThumbnailList {
+        thumbnail_list: Vec<ThumbnailItem>,
+        selected_index: i32,
+    }
+
+    impl ThumbnailList {
+        pub fn new() -> Self {
+            let thumbnail_size = Vec2::new(100., 100.);
+            let vec = vec![
+
+                ThumbnailItem::new(0, thumbnail_size),
+                ThumbnailItem::new(1, thumbnail_size),
+                ThumbnailItem::new(2, thumbnail_size),
+                ThumbnailItem::new(3, thumbnail_size),
+                ThumbnailItem::new(4, thumbnail_size),
+
+
+
+            ];
+            Self {
+                thumbnail_list: vec,
+                selected_index: 0
+            }
+        }
+    }
+
+    impl Widget for &mut ThumbnailList {
+        fn ui(self, ui: &mut Ui) -> Response {
+            use crate::ui::egui;
+            let mut ctx = egui::CtxRef::default();
+            let mut scrollarea = egui::ScrollArea::new([true,true])
+                .show(ui, |ui| {
+                    ui.colored_label(Color32::WHITE, "-- THUMBNAILLIST --");
+                
+                    let thumbnail_size = Vec2::new(100., 100.);
+                     for item in self.thumbnail_list.as_slice() {//for i in thumbs.len
+                        let thumbitem = ui.add(&mut ThumbnailItem::new(item.index_number, thumbnail_size));
+                        let thumbitem = thumbitem.interact(Sense::click());
+                        if thumbitem.clicked() {
+                            println!("Item index: {} clicked!", item.index_number);
+                        }
+                    
+                    }
+                    
+            });
+            
+            //let panel = ui)
+            
+
+            
+            
+
+            let total_size = Vec2::new(100.,100.) * Vec2::new(1., self.thumbnail_list.len() as f32);
+
+            let (rect, response) = ui.allocate_exact_size(total_size, Sense::click());
+            //self.paint_at(ui, rect);
+
+            //let response = response.interact(Sense::click());
+
+            if response.clicked() {
+                println!("Clicked ThumbnailList!");
+            }    
+            
+            response
+        }
+    }
+    
     #[derive(Debug)]
     pub struct ThumbnailItem {
         image: Option<Image>,
         index_number: i32,
         clicked: fn(i32), //fireoff click event
-        selected: bool
+        selected: bool,
+        image_size: Vec2
     }
 
     impl ThumbnailItem {
-        pub fn new(current_page: i32) -> Self {
+        pub fn new(current_page: i32, image_size: Vec2) -> Self {
             Self {
                 image: None,
-                index_number: 0,
+                index_number: current_page,
                 clicked: |i|{println!("ThumbItem {} clicked", i)},
-                selected: false
+                selected: false,
+                image_size: image_size
             }
         }
 
@@ -135,7 +207,8 @@ mod widgets {
                 image: None,
                 index_number: 0,
                 clicked: |i|{ println!("ThumbItem {} clicked", i)},
-                selected: false
+                selected: false,
+                image_size: Vec2::new(100.,100.)
             }
         }
     }
@@ -145,7 +218,7 @@ mod widgets {
             use crate::ui::egui;
             let mut ctx = egui::CtxRef::default();
             
-            let image_size = Vec2::new(25., 25.);
+            let image_size = self.image_size;
             let image = ui.add(Image::new(TextureId::Egui, image_size));
             let mut image = image.interact(Sense::click());
             if image.clicked() {
@@ -160,7 +233,7 @@ mod widgets {
             let (rect, response) = ui.allocate_exact_size(total_size, Sense::click());
             //self.paint_at(ui, rect);
 
-            let response = response.interact(Sense::click());
+            //let response = response.interact(Sense::click());
 
             if response.clicked() {
                 self.clicked(self.index_number);
@@ -169,6 +242,7 @@ mod widgets {
             response
             }
         }
+   
     
 }
 
