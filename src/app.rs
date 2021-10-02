@@ -1,53 +1,17 @@
-use std::{default, sync::{
-    mpsc::{self, Receiver, Sender},
-    Arc, Mutex,
-}};
-
-use crate::providers::CollectionProvider;
 pub(crate) use crate::ui::Ui;
 
 #[derive(Default)]
-pub struct AppState {
-    comic_collection: Option<Box<dyn CollectionProvider>>,
-    collection_index: usize,
-    page_index: usize,
-}
+pub struct AppState {}
 
-impl AppState {
-    pub fn new() -> Self {
-        Self {
-            ..Default::default()
-        }
-    }
-}
 
 pub struct App {
-    state: Arc<Mutex<AppState>>,
-    col_tx: Sender<Box<dyn CollectionProvider>>,
-    col_rx: Receiver<Box<dyn CollectionProvider>>,
     ui: Ui,
 }
 
 impl App {
     pub fn new() -> Self {
-        let (col_tx, col_rx): (
-            Sender<Box<dyn CollectionProvider>>,
-            Receiver<Box<dyn CollectionProvider>>,
-        ) = mpsc::channel();
-
-        let appstate = AppState {
-            comic_collection: None,
-            collection_index: 0,
-            page_index: 0,
-        };
-
-        let ui = Ui::new();
-
         Self {
-            state: Arc::new(Mutex::new(appstate)),
-            ui,
-            col_tx,
-            col_rx,
+            ui: Ui::new()
         }
     }
 }
@@ -58,7 +22,6 @@ impl epi::App for App {
     }
 
     fn update(&mut self, ctx: &epi::egui::CtxRef, frame: &mut epi::Frame<'_>) {
-        
         self.ui.tick(ctx, frame);
     }
 
