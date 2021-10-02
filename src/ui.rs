@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use anyhow::Result;
 use eframe::egui::SidePanel;
@@ -9,12 +10,16 @@ use epi::egui::CtxRef;
 use epi::egui::TextureId;
 use image::Pixel;
 
+use crate::providers::ComicProvider;
+use crate::providers::PageProvider;
 use crate::providers::file_system::FileSystemCollectionProvider;
 use crate::providers::CollectionProvider;
 
-#[derive(Debug, Default)]
+#[derive(Default)]
 pub struct Ui {
-    collection: Option<FileSystemCollectionProvider>,
+    collection: Option<Arc<dyn CollectionProvider>>,
+    current_comic: Option<Arc<dyn ComicProvider>>,
+    current_page: Option<Arc<dyn PageProvider>>,
     current_comic_index: usize,
     current_page_index: usize,
 }
@@ -50,7 +55,18 @@ impl Ui {
                 FileSystemCollectionProvider::new("collection name".to_string(), dropped_files)
                     .unwrap();
 
-            self.collection = Some(collection);
+            self.collection = Some(Arc::new(collection));
+            self.current_comic = None;
+            self.current_page = None;
+            self.current_comic_index = 0;
+            self.current_page_index = 0;
+        }
+
+        if let Some(collection) = self.collection.clone() {
+            if self.current_comic.is_none() {
+                let comic = Arc::new(collection.get_comic(self.current_comic_index).unwrap().clone());
+                self.current_comic = Some(comic);
+            }
         }
         
         egui::SidePanel::left("thumbnail_panel")

@@ -1,4 +1,4 @@
-use std::{cmp::Ordering, fs::File, path::PathBuf};
+use std::{cmp::Ordering, fs::File, path::PathBuf, sync::Arc};
 
 use anyhow::Result;
 use unrar::Archive as RarArchive;
@@ -16,7 +16,9 @@ impl FileSystemCollectionProvider {
     pub fn new(collection_name: String, paths: Vec<PathBuf>) -> Result<Self> {
         let comics: Vec<_> = paths
             .iter()
-            .filter_map(|path| FileSystemComicProvider::from_archive_path(path.clone()).ok())
+            .map(|path| {
+                FileSystemComicProvider::new(path.clone())
+            })
             .collect();
 
         Ok(Self {
@@ -31,8 +33,9 @@ impl CollectionProvider for FileSystemCollectionProvider {
         self.collection_name.clone()
     }
 
-    fn get_comic(&self, index: usize) -> Option<&dyn ComicProvider> {
-        Some(self.comics.get(index).unwrap())
+    fn get_comic(&self, index: usize) -> Option<Arc<dyn ComicProvider>> {
+        let comic = self.comics.get(index).unwrap().clone();
+        Some(Arc::new(comic))
     }
 
     fn get_size(&self) -> usize {
@@ -43,10 +46,21 @@ impl CollectionProvider for FileSystemCollectionProvider {
 #[derive(Debug)]
 pub struct FileSystemComicProvider {
     title: String,
-    pages: Vec<FileSystemPageProvider>,
+    path: PathBuf,
+    pages: Option<Vec<FileSystemPageProvider>>,
 }
 
 impl FileSystemComicProvider {
+    fn new(path: PathBuf) -> Self {
+        let title = path.file_name().unwrap().to_str().unwrap().to_string();
+
+        Self {
+            title,
+            path,
+            pages: None,
+        }
+    }
+
     fn from_archive_path(path: PathBuf) -> Result<Self, ProviderError> {
         return match path.extension() {
             Some(ext) if ext == "zip" || ext == "cbz" => Self::from_zip(path),
@@ -80,7 +94,7 @@ impl FileSystemComicProvider {
 
                 FileSystemPageProvider {
                     file_name: name.to_string(),
-                    image_buffer: Box::new(img),
+                    image_buffer: img,
                 }
             })
             .collect::<Vec<FileSystemPageProvider>>();
@@ -89,7 +103,8 @@ impl FileSystemComicProvider {
 
         Ok(Self {
             title: file_name,
-            pages,
+            path,
+            pages: Some(pages),
         })
     }
 
@@ -118,7 +133,7 @@ impl FileSystemComicProvider {
 
                 FileSystemPageProvider {
                     file_name: filename,
-                    image_buffer: Box::new(img),
+                    image_buffer: img,
                 }
             })
             .collect::<Vec<FileSystemPageProvider>>();
@@ -133,29 +148,40 @@ impl FileSystemComicProvider {
 
         Ok(Self {
             title: file_name,
-            pages,
+            path,
+            pages: Some(pages),
         })
     }
 }
 
 impl ComicProvider for FileSystemComicProvider {
+    fn open(&self) -> Result<()> {
+        Ok(())
+    }
+
     fn get_title(&self) -> String {
         self.title.clone()
     }
 
     fn get_page(&self, index: usize) -> Option<&dyn PageProvider> {
-        self.pages.get(index).map(|p| p as &dyn PageProvider)
+        match &self.pages {
+            Some(pages) => pages.get(index).map(|p| p as &dyn PageProvider),
+            _ => None,
+        }
     }
 
     fn get_length(&self) -> usize {
-        self.pages.len()
+        match &self.pages {
+            Some(pages) => pages.len(),
+            _ => 0
+        }
     }
 }
 
 #[derive(Debug, Clone, Eq)]
 pub struct FileSystemPageProvider {
     file_name: String,
-    image_buffer: Box<image::DynamicImage>,
+    image_buffer: image::DynamicImage,
 }
 
 impl PageProvider for FileSystemPageProvider {
