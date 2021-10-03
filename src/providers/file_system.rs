@@ -1,8 +1,8 @@
-use std::{cmp::Ordering, fs::File, path::PathBuf, sync::Arc};
+use std::{cmp::Ordering, fs::File, io::Cursor, path::PathBuf, sync::Arc};
 
 use anyhow::Result;
-use unrar::Archive as RarArchive;
-use zip::ZipArchive;
+use compress_tools::{list_archive_files, uncompress_archive_file};
+use image::io::Reader as ImageReader;
 
 use super::{CollectionProvider, ComicProvider, PageProvider, ProviderError};
 
@@ -16,9 +16,7 @@ impl FileSystemCollectionProvider {
     pub fn new(collection_name: String, paths: Vec<PathBuf>) -> Result<Self> {
         let comics: Vec<_> = paths
             .iter()
-            .map(|path| {
-                FileSystemComicProvider::new(path.clone())
-            })
+            .map(|path| FileSystemComicProvider::new(path.clone()).unwrap())
             .collect();
 
         Ok(Self {
@@ -33,9 +31,10 @@ impl CollectionProvider for FileSystemCollectionProvider {
         self.collection_name.clone()
     }
 
-    fn get_comic(&self, index: usize) -> Option<Arc<dyn ComicProvider>> {
-        let comic = self.comics.get(index).unwrap().clone();
-        Some(Arc::new(comic))
+    fn get_comic(&self, index: usize) -> Arc<Option<&dyn ComicProvider>> {
+        let comic = self.comics.get(index).map(|p| p as &dyn ComicProvider);
+
+        Arc::new(comic)
     }
 
     fn get_size(&self) -> usize {
@@ -47,110 +46,30 @@ impl CollectionProvider for FileSystemCollectionProvider {
 pub struct FileSystemComicProvider {
     title: String,
     path: PathBuf,
-    pages: Option<Vec<FileSystemPageProvider>>,
+    archive: File,
+    file_list: Vec<String>,
 }
 
 impl FileSystemComicProvider {
-    fn new(path: PathBuf) -> Self {
-        let title = path.file_name().unwrap().to_str().unwrap().to_string();
+    fn new(path: PathBuf) -> Result<Self, ProviderError> {
+        match path.extension() {
+            Some(ext) if ext == "zip" || ext == "cbz" || ext == "rar" || ext == "cbr" => {
+                let title = path.file_name().unwrap().to_str().unwrap().to_string();
 
-        Self {
-            title,
-            path,
-            pages: None,
-        }
-    }
+                let archive = File::open(path.clone()).unwrap();
 
-    fn from_archive_path(path: PathBuf) -> Result<Self, ProviderError> {
-        return match path.extension() {
-            Some(ext) if ext == "zip" || ext == "cbz" => Self::from_zip(path),
-            Some(ext) if ext == "rar" || ext == "cbr" => Self::from_rar(path),
+                let mut file_list = list_archive_files(&archive).unwrap();
+                file_list.sort();
+
+                Ok(Self {
+                    title,
+                    path,
+                    archive,
+                    file_list,
+                })
+            }
             _ => Err(ProviderError::InvalidArchiveType),
-        };
-    }
-
-    fn from_zip(path: PathBuf) -> Result<Self, ProviderError> {
-        let file_name = path
-            .file_name()
-            .unwrap_or_default()
-            .to_str()
-            .unwrap_or_default()
-            .to_string();
-
-        let temp_directory = tempfile::tempdir().unwrap().into_path();
-
-        let file = File::open(&path).unwrap();
-        let reader = std::io::BufReader::new(file);
-
-        let mut zip_archive = ZipArchive::new(reader).unwrap();
-
-        zip_archive.extract(&temp_directory).unwrap();
-
-        let mut pages: Vec<FileSystemPageProvider> = zip_archive
-            .file_names()
-            .map(|name| {
-                let path = temp_directory.join(name);
-                let img = image::io::Reader::open(path).unwrap().decode().unwrap();
-
-                FileSystemPageProvider {
-                    file_name: name.to_string(),
-                    image_buffer: img,
-                }
-            })
-            .collect::<Vec<FileSystemPageProvider>>();
-
-        pages.sort();
-
-        Ok(Self {
-            title: file_name,
-            path,
-            pages: Some(pages),
-        })
-    }
-
-    fn from_rar(path: PathBuf) -> Result<Self, ProviderError> {
-        let file_name = path
-            .file_name()
-            .unwrap_or_default()
-            .to_str()
-            .unwrap_or_default()
-            .to_string();
-
-        let path_string = path.to_str().unwrap().to_string();
-
-        let temp_directory = tempfile::tempdir().unwrap().into_path();
-
-        let mut pages: Vec<FileSystemPageProvider> = RarArchive::new(path_string.clone())
-            .list()
-            .unwrap()
-            .process()
-            .unwrap()
-            .into_iter()
-            .map(|entry| {
-                let filename = entry.filename;
-                let path = temp_directory.join(&filename);
-                let img = image::io::Reader::open(path).unwrap().decode().unwrap();
-
-                FileSystemPageProvider {
-                    file_name: filename,
-                    image_buffer: img,
-                }
-            })
-            .collect::<Vec<FileSystemPageProvider>>();
-
-        pages.sort();
-
-        RarArchive::new(path_string.clone())
-            .extract_to(temp_directory.to_str().unwrap_or_default().to_string())
-            .unwrap()
-            .process()
-            .unwrap();
-
-        Ok(Self {
-            title: file_name,
-            path,
-            pages: Some(pages),
-        })
+        }
     }
 }
 
@@ -163,18 +82,29 @@ impl ComicProvider for FileSystemComicProvider {
         self.title.clone()
     }
 
-    fn get_page(&self, index: usize) -> Option<&dyn PageProvider> {
-        match &self.pages {
-            Some(pages) => pages.get(index).map(|p| p as &dyn PageProvider),
-            _ => None,
-        }
+    fn get_page(&self, index: usize) -> Option<Box<dyn PageProvider>> {
+        let file_name = self.file_list.get(index).unwrap();
+
+        let mut img_buffer = Vec::default();
+
+        uncompress_archive_file(&self.archive, &mut img_buffer, file_name).unwrap();
+
+        let image = ImageReader::new(Cursor::new(img_buffer))
+            .with_guessed_format()
+            .unwrap()
+            .decode()
+            .unwrap();
+
+        let page_provider = FileSystemPageProvider {
+            file_name: file_name.to_string(),
+            image_buffer: image,
+        };
+
+        Some(Box::new(page_provider))
     }
 
     fn get_length(&self) -> usize {
-        match &self.pages {
-            Some(pages) => pages.len(),
-            _ => 0
-        }
+        self.file_list.len()
     }
 }
 
@@ -185,8 +115,8 @@ pub struct FileSystemPageProvider {
 }
 
 impl PageProvider for FileSystemPageProvider {
-    fn get_image(&self) -> Option<&image::DynamicImage> {
-        Some(&self.image_buffer)
+    fn get_image(&self) -> image::DynamicImage {
+        self.image_buffer.clone()
     }
 
     fn get_file_name(&self) -> Result<String> {

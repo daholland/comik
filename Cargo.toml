@@ -18,7 +18,5 @@ eframe = { git = "https://github.com/emilk/egui", branch = "master" }
 glium = "0.30.2"
 anyhow = "1.0.44"
 image = "0.23.14"
-tempfile = "3.2.0"
-zip = "0.5.13"
-unrar = "0.4.4"
 thiserror = "1.0.29"
+compress-tools = "0.12.2"

@@ -1,0 +1,13 @@
+# Building  
+
+## Windows
+> vcpkg install libarchive:x64-windows-static-md
+> cargo build  
+
+## Linux
+> apt-get install libarchive-dev
+> cargo build
+
+## OSX
+> brew install libarchive
+> cargo build
