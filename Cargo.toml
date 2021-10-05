@@ -4,6 +4,7 @@ cargo-features = ["strip"]
 name = "comik"
 version = "0.1.0"
 edition = "2018"
+resolver = "2"
 
 [profile.release]
 strip = true
@@ -12,11 +13,22 @@ lto = true
 codegen-units = 1
 
 [dependencies]
-egui_glium = { git = "https://github.com/emilk/egui", branch = "master" }
-epi = { git = "https://github.com/emilk/egui", branch = "master" }
-eframe = { git = "https://github.com/emilk/egui", branch = "master" }
-glium = "0.30.2"
+# egui_glium = { git = "https://github.com/emilk/egui", branch = "master" }
+# epi = { git = "https://github.com/emilk/egui", branch = "master" }
+# eframe = { git = "https://github.com/emilk/egui", branch = "master" }
+# glium = "0.30.2"
 anyhow = "1.0.44"
 image = "0.23.14"
 thiserror = "1.0.29"
 compress-tools = "0.12.2"
+resize = "0.7.2"
+chrono = "0.4"
+futures-lite = "1.12"
+egui = "0.14"
+epi = "0.14"
+egui_wgpu_backend = "0.12"
+egui_winit_platform = "0.10.0"
+wgpu = "0.10"
+winit = "0.25"
+egui_demo_lib = "0.14"
+cgmath = "0.18.0"

@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+use std::ops::IndexMut;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -5,10 +7,16 @@ use epi::egui;
 use epi::egui::Color32;
 use epi::egui::CtxRef;
 use epi::egui::TextureId;
+use egui::ScrollArea;
 use image::Pixel;
 
 use crate::providers::file_system::FileSystemCollectionProvider;
 use crate::providers::CollectionProvider;
+
+pub enum Event {
+    ChangePageEvent(usize),
+    QuitAppEvent(usize)
+}
 
 #[derive(Default)]
 pub struct Ui {
@@ -18,6 +26,8 @@ pub struct Ui {
     current_image: Option<image::DynamicImage>,
     current_texture: Option<TextureId>,
     current_image_size: egui::Vec2,
+    current_image_thumbnails: Vec<image::DynamicImage>,
+    event_queue: VecDeque<Event>
 }
 
 impl Ui {
@@ -28,26 +38,90 @@ impl Ui {
     }
 
     pub fn tick(&mut self, ctx: &CtxRef, frame: &mut epi::Frame<'_>) {
-        if !&ctx.input().raw.dropped_files.is_empty() {
+        let cargopath: PathBuf = env!("CARGO_MANIFEST_DIR").into();   
+        let _hardcoded = vec![cargopath.join("little-nemo-all-421.zip")];
+
+        let redraw = false;
+        
+        if !&ctx.input().raw.dropped_files.is_empty() || self.collection.is_none()  {
             let dropped_files = ctx
-                .input()
-                .raw
-                .dropped_files
-                .clone()
-                .iter()
-                .map(|file| file.path.as_ref().unwrap().clone())
-                .collect::<Vec<PathBuf>>();
-
-            dbg!(&dropped_files);
-
+            .input()
+            .raw
+            .dropped_files
+            .clone()
+            .iter()
+            .map(|file| file.path.as_ref().unwrap().clone())
+            .collect::<Vec<PathBuf>>();
+            
+            dbg!(&_hardcoded);
             let collection =
-                FileSystemCollectionProvider::new("collection name".to_string(), dropped_files)
+                FileSystemCollectionProvider::new("collection name".to_string(), _hardcoded)
                     .unwrap();
 
             self.collection = Some(Arc::new(collection));
             self.current_comic_index = 0;
             self.current_page_index = 0;
         }
+
+
+        if ctx.input().key_pressed(egui::Key::ArrowRight) {
+            dbg!("right pressed");
+            if let Some(collection) = self.collection.clone() {
+                
+                    if let Some(comic) = *collection.get_comic(self.current_comic_index) {
+                        dbg!(comic.get_length());
+                        if  self.current_page_index < comic.get_length() - 1 {
+                            dbg!("push event");
+                            self.event_queue.push_back(Event::ChangePageEvent(self.current_page_index + 1))
+                        }
+                    }
+                
+            }
+            dbg!("end of keypress");
+            // dbg!(self.event_queue);
+            dbg!(self.current_page_index);
+            
+        }
+
+        if ctx.input().key_pressed(egui::Key::ArrowLeft) {
+            dbg!("left pressed");
+            if let Some(collection) = self.collection.clone() {
+                
+                    if let Some(comic) = *collection.get_comic(self.current_comic_index) {
+                        dbg!(comic.get_length());
+                        if  self.current_page_index > 0 {
+                            dbg!("push event LEFT -> CPE");
+                            self.event_queue.push_back(Event::ChangePageEvent(self.current_page_index - 1))
+                        }
+                    }
+                
+            }
+            dbg!("end of keypress");
+            // dbg!(self.event_queue);
+            dbg!(self.current_page_index);
+            
+        }
+
+        //todo: probably want to limit this per frame but theres not many events..?
+        while let Some(ev) = self.event_queue.pop_front() {
+            match ev {
+                Event::ChangePageEvent(new_index) => {
+                    
+                    self.current_page_index = new_index;
+                    self.current_image = None;
+                    self.current_texture = None;
+                    if let Some(texture) = self.current_texture {
+                        
+                    }
+                        
+                dbg!("changepageevent handled");
+                
+                
+                }
+                _ => unimplemented!()
+            }
+        }
+
 
         if let Some(collection) = self.collection.clone() {
             if self.current_image.is_none() {
@@ -77,10 +151,14 @@ impl Ui {
                 if let Some((texture, size)) = self.render_current_page(frame) {
                     self.current_texture = Some(texture);
                     self.current_image_size = size;
+                    // if (redraw) {
+                    //     ui.image(self.current_texture.unwrap(), self.current_image_size);
+                    // }
                 }
             }
 
         });
+
     }
 
     fn render_current_page(&self, frame: &mut epi::Frame<'_>) -> Option<(TextureId, egui::Vec2)> {
@@ -112,7 +190,7 @@ impl Ui {
 }
 
 mod widgets {
-    use eframe::egui::{Color32, Image, Response, Sense, TextureId, Ui, Vec2, Widget};
+    use egui::{Color32, Image, Response, Sense, TextureId, Ui, Vec2, Widget};
 
     
     
@@ -145,23 +223,23 @@ mod widgets {
 
     impl Widget for &mut ThumbnailList {
         fn ui(self, ui: &mut Ui) -> Response {
-            use crate::ui::egui;
+            
             let mut ctx = egui::CtxRef::default();
-            let mut scrollarea = egui::ScrollArea::new([true,true])
-                .id_source("thumbnaillist_scroll").show(ui, |ui| {
-                    ui.colored_label(Color32::WHITE, "-- THUMBNAILLIST --");
+            // let mut scrollarea = egui::ScrollArea {always_show_scroll: true, id_source: Some(egui::Id::new("thumbs_scroll_area")),max_height: 1000f32, offset: Some(Vec2::ZERO),scrolling_enabled: true}
+            //     .id_source("thumbnaillist_scroll").show(ui, |ui| {
+            //         ui.colored_label(Color32::WHITE, "-- THUMBNAILLIST --");
                 
-                    let thumbnail_size = Vec2::new(100., 100.);
-                     for item in self.thumbnail_list.as_slice() {//for i in thumbs.len
-                        let thumbitem = ui.add(&mut ThumbnailItem::new(item.index_number, thumbnail_size, item.selected));
-                        let thumbitem = thumbitem.interact(Sense::click());
-                        if thumbitem.clicked() {
-                            println!("Item index: {} clicked!", item.index_number);
-                        }
+            //         let thumbnail_size = Vec2::new(100., 100.);
+            //          for item in self.thumbnail_list.as_slice() {//for i in thumbs.len
+            //             let thumbitem = ui.add(&mut ThumbnailItem::new(item.index_number, thumbnail_size, item.selected));
+            //             let thumbitem = thumbitem.interact(Sense::click());
+            //             if thumbitem.clicked() {
+            //                 println!("Item index: {} clicked!", item.index_number);
+            //             }
                     
-                    }
+            //         }
                     
-            });
+            // });
             
             //let panel = ui)
             

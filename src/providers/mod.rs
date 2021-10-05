@@ -28,3 +28,8 @@ pub trait PageProvider {
     fn get_image(&self) -> image::DynamicImage;
     fn get_file_name(&self) -> Result<String>;
 }
+
+pub trait ThumbnailProvider {
+    fn get_thumbnail(&self, index: usize) -> image::DynamicImage;
+    
+}

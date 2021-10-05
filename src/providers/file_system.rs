@@ -3,7 +3,7 @@ use std::{cmp::Ordering, fs::File, io::Cursor, path::PathBuf, sync::Arc};
 use anyhow::Result;
 use compress_tools::{list_archive_files, uncompress_archive_file};
 use image::io::Reader as ImageReader;
-
+use resize::Pixel::RGB8;
 use super::{CollectionProvider, ComicProvider, PageProvider, ProviderError};
 
 #[derive(Debug)]
@@ -18,7 +18,7 @@ impl FileSystemCollectionProvider {
             .iter()
             .map(|path| FileSystemComicProvider::new(path.clone()).unwrap())
             .collect();
-
+        dbg!("new file system collection provider");
         Ok(Self {
             collection_name,
             comics,
@@ -48,10 +48,15 @@ pub struct FileSystemComicProvider {
     path: PathBuf,
     archive: File,
     file_list: Vec<String>,
+    thumbnail_list: Vec<String>
 }
 
 impl FileSystemComicProvider {
     fn new(path: PathBuf) -> Result<Self, ProviderError> {
+        fn generate_thumbnails() {
+
+        }
+        
         match path.extension() {
             Some(ext) if ext == "zip" || ext == "cbz" || ext == "rar" || ext == "cbr" => {
                 let title = path.file_name().unwrap().to_str().unwrap().to_string();
@@ -60,12 +65,13 @@ impl FileSystemComicProvider {
 
                 let mut file_list = list_archive_files(&archive).unwrap();
                 file_list.sort();
-
+                
                 Ok(Self {
                     title,
                     path,
                     archive,
                     file_list,
+                    thumbnail_list: vec![]
                 })
             }
             _ => Err(ProviderError::InvalidArchiveType),
