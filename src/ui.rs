@@ -225,28 +225,22 @@ mod widgets {
         fn ui(self, ui: &mut Ui) -> Response {
             
             let mut ctx = egui::CtxRef::default();
-            // let mut scrollarea = egui::ScrollArea {always_show_scroll: true, id_source: Some(egui::Id::new("thumbs_scroll_area")),max_height: 1000f32, offset: Some(Vec2::ZERO),scrolling_enabled: true}
-            //     .id_source("thumbnaillist_scroll").show(ui, |ui| {
-            //         ui.colored_label(Color32::WHITE, "-- THUMBNAILLIST --");
+            let screen = ctx.available_rect();
+            let mut scrollarea = egui::ScrollArea::from_max_height(screen.height()).show(ui, |ui| {
+                    ui.colored_label(Color32::WHITE, "-- THUMBNAILLIST --");
                 
-            //         let thumbnail_size = Vec2::new(100., 100.);
-            //          for item in self.thumbnail_list.as_slice() {//for i in thumbs.len
-            //             let thumbitem = ui.add(&mut ThumbnailItem::new(item.index_number, thumbnail_size, item.selected));
-            //             let thumbitem = thumbitem.interact(Sense::click());
-            //             if thumbitem.clicked() {
-            //                 println!("Item index: {} clicked!", item.index_number);
-            //             }
+                    let thumbnail_size = Vec2::new(100., 100.);
+                     for item in self.thumbnail_list.as_slice() {//for i in thumbs.len
+                        let thumbitem = ui.add(&mut ThumbnailItem::new(item.index_number, thumbnail_size, item.selected));
+                        let thumbitem = thumbitem.interact(Sense::click());
+                        if thumbitem.clicked() {
+                            println!("Item index: {} clicked!", item.index_number);
+                        }
                     
-            //         }
+                    }
                     
-            // });
+            });
             
-            //let panel = ui)
-            
-
-            
-            
-
             let total_size = Vec2::new(100.,100.) * Vec2::new(1., self.thumbnail_list.len() as f32);
 
             let (rect, response) = ui.allocate_exact_size(total_size, Sense::click());
@@ -338,38 +332,6 @@ mod widgets {
             response
             }
         }
-   
-    
-}
 
-mod math_helpers {
-    use std::f64::consts::PI as MathPI;
-    struct Tween {
-        //function
-        funconce: fn(f64,f64) -> f64,
-        start: f32, 
-        end: f32
-    }
 
-    fn easeInSine(x: f64) -> f64 {
-        1. - (x * MathPI).cos()
-    }
-
-    fn easeOutSine(x: f64) -> f64 {
-        unimplemented!()//1. - (x * MathPI).cos()
-    }
-
-    impl Tween {
-        fn new() -> Self {
-            Self {
-                funconce: |input, step| {input},
-                start: 0f32,
-                end: 0f32
-            }
-        }
-
-    
-    }
-
-    
 }
